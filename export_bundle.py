@@ -1,74 +1,66 @@
-"""Save a trained notebook classifier and normalization stats for Streamlit inference."""
-
+"""Export an ensemble of capstone classifier heads for Streamlit inference."""
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 import torch
 from torch import nn
 
 
 def export_bundle(
-    model: nn.Module,
-    stats: tuple[torch.Tensor, torch.Tensor],
-    *,
-    encoder_id: str,
-    labels: Sequence[str],
-    output_dir: str | Path = "model_bundle",
-    sample_rate: int = 16_000,
-    max_seconds: float = 5.0,
-    backbone_key: str = "",
-    speaker_normalization: bool = False,
+    members: Sequence[dict[str, Any]], *, labels: Sequence[str], output_dir: str | Path,
+    sample_rate: int = 16_000, max_seconds: float = 5.0,
+    speaker_normalization: bool = False, results: dict[str, Any] | None = None,
 ) -> Path:
-    """Write a CPU-safe classifier bundle and JSON metadata.
+    """Serialize fitted (model, stats, encoder metadata) entries and run results.
 
-    The single-clip Streamlit app requires speaker_normalization=False because a
-    new speaker's reference embedding cannot be estimated from one utterance.
+    Each member contains model, stats=(mean,std), backbone_key, encoder_id, and seed.
+    Single-utterance inference requires speaker_normalization=False.
     """
     if speaker_normalization:
-        raise ValueError(
-            "Export with speaker_normalization=False for single-utterance inference. "
-            "Retrain the head without speaker normalization first."
-        )
-    if len(labels) != 8:
-        raise ValueError(f"Expected the notebook's 8 labels; received {len(labels)}.")
-    if len(stats) != 2:
-        raise ValueError("stats must be the (feature_mean, feature_std) pair from fit_head().")
-
-    feature_mean, feature_std = stats
-    if feature_mean.shape != feature_std.shape or feature_mean.ndim != 2:
-        raise ValueError("Feature statistics must have equal 2-D (layers, features) shapes.")
-    if not torch.isfinite(feature_mean).all() or not torch.isfinite(feature_std).all():
-        raise ValueError("Feature statistics contain NaN or infinite values.")
-
+        raise ValueError("Export single-utterance models with speaker normalization disabled.")
+    if len(labels) != 8 or not members:
+        raise ValueError("Expected eight emotion labels and at least one ensemble member.")
     folder = Path(output_dir)
     folder.mkdir(parents=True, exist_ok=True)
-    state = {key: value.detach().cpu().contiguous() for key, value in model.state_dict().items()}
-    checkpoint = {
-        "head_state": state,
-        "feature_mean": feature_mean.detach().float().cpu().contiguous(),
-        "feature_std": feature_std.detach().float().cpu().clamp_min(1e-6).contiguous(),
-    }
-    torch.save(checkpoint, folder / "bundle.pt")
-
+    records = []
+    first_shape = None
+    for item in members:
+        model: nn.Module = item["model"]
+        mean, std = item["stats"]
+        if mean.ndim != 2 or mean.shape != std.shape or not torch.isfinite(mean).all() or not torch.isfinite(std).all():
+            raise ValueError("Each member needs finite matching (layers, features) normalization tensors.")
+        first_shape = first_shape or tuple(mean.shape)
+        if tuple(mean.shape) != first_shape:
+            raise ValueError("All encoder members must produce the same feature shape.")
+        records.append({
+            "backbone_key": str(item["backbone_key"]),
+            "encoder_id": str(item["encoder_id"]),
+            "seed": int(item["seed"]),
+            "head_state": {k: v.detach().cpu().contiguous() for k, v in model.state_dict().items()},
+            "feature_mean": mean.detach().float().cpu().contiguous(),
+            "feature_std": std.detach().float().cpu().clamp_min(1e-6).contiguous(),
+        })
+    torch.save({"members": records}, folder / "bundle.pt")
     metadata = {
-        "format_version": 1,
-        "backbone_key": backbone_key,
-        "encoder_id": encoder_id,
+        "format_version": 2,
         "labels": list(labels),
         "sample_rate": int(sample_rate),
         "max_seconds": float(max_seconds),
-        "n_layers": int(feature_mean.shape[0]),
-        "feature_dim": int(feature_mean.shape[1]),
+        "n_layers": int(first_shape[0]),
+        "feature_dim": int(first_shape[1]),
         "head_hidden": 256,
+        "encoder_ids": list(dict.fromkeys(x["encoder_id"] for x in records)),
+        "member_count": len(records),
+        "seed_count": len(set(x["seed"] for x in records)),
         "pooling": "temporal mean and standard deviation per hidden layer",
         "speaker_normalization": False,
         "input_standardization": "per-clip z-score after trim/crop/peak-normalization",
     }
-    (folder / "metadata.json").write_text(
-        json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    (folder / "metadata.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False)+"\n", encoding="utf-8")
+    if results is not None:
+        (folder / "results.json").write_text(json.dumps(results, indent=2, ensure_ascii=False, default=float)+"\n", encoding="utf-8")
     return folder
 
