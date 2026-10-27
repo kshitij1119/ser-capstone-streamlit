@@ -1,30 +1,30 @@
-# SER Streamlit deployment
+# Speech Emotion Recognition — Streamlit app
 
-This app serves the RAVDESS speech-emotion classifier from the capstone notebook. It expects a small trained head bundle in `model_bundle/`; the WavLM/HuBERT encoder is loaded from its Hugging Face model ID at app startup.
+A Streamlit interface for the RAVDESS speech-emotion capstone. It provides single-recording inference with WAV upload or microphone input, averages the notebook's encoder/seed classifier heads, and displays evaluation outputs exported from the notebook.
 
-## Files
+## Project files
 
-- `app.py` — Streamlit interface for WAV upload and eight-class probability display.
-- `ser_inference.py` — audio preprocessing, encoder inference, and classifier loading.
-- `export_bundle.py` — serializes a trained notebook head and its feature normalization.
-- `requirements.txt` — app dependencies for Streamlit Community Cloud.
-- `model_bundle/` — add `bundle.pt` and `metadata.json` after exporting from the notebook.
+- `app.py` — Streamlit interface, prediction, evaluation results, and method summary.
+- `ser_inference.py` — WAV preprocessing, encoder feature extraction, and ensemble inference.
+- `export_bundle.py` — helper for serializing fitted notebook heads and their feature statistics.
+- `requirements.txt` — Streamlit Cloud runtime dependencies.
+- `model_bundle/` — receives `bundle.pt`, `metadata.json`, `results.json`, and `confusion_matrix.png` from the notebook export.
 
-## Create the trained bundle
+## Generate the model bundle
 
-Run the final **Export Streamlit model bundle** cell in `SER_capstone_optimized_explained.ipynb` after the data, embeddings, split, and training functions have been created. It trains a deployable head without speaker normalization (required for a single uploaded utterance), evaluates that head on the held-out actor test split, and writes `model_bundle/bundle.pt` plus `metadata.json`.
+1. Open and run the notebook `SER_capstone_optimized_explained.ipynb` through its final **Export Streamlit model bundle** cell. Run it after the notebook's data preparation, feature extraction, split, training, and evaluation cells have completed.
+2. The export cell trains one classifier head for every configured encoder and seed, using the actor-independent train/validation/test split and no speaker normalization for single-utterance inference.
+3. Copy all four generated files—`bundle.pt`, `metadata.json`, `results.json`, and `confusion_matrix.png`—into this repository's `model_bundle/` directory and commit them. The encoder weights are downloaded from Hugging Face at runtime; do not include dataset audio or credentials.
 
-Copy both generated files into this app's `model_bundle/` directory. The classifier bundle is small; the pretrained encoder weights are downloaded by Transformers when the app starts.
+The app loads one large pretrained encoder at a time. The classifier bundle contains the fitted heads and training feature statistics. A compatible Hugging Face model must be publicly downloadable or accessible to the deployment runtime.
 
-## Deploy on Streamlit Community Cloud
+## Deploy to Streamlit Community Cloud
 
-1. Push this directory's files to the private `kshitij1119/ser-capstone-streamlit` GitHub repository.
-2. Add the two generated bundle files under `model_bundle/` and push them too.
-3. In Streamlit Community Cloud, create an app from that repository, select branch `main`, and set the app file to `app.py`.
-4. Use Python 3.11 or 3.12 in advanced settings if dependency resolution for the default runtime fails.
-5. Check Cloud logs after the first launch. The first launch downloads the large encoder; memory or startup constraints may require a smaller encoder and a newly trained matching head.
+1. Create a Streamlit Community Cloud app from this repository.
+2. Select branch `main` and set the app entry point to `app.py` at the repository root.
+3. Deploy and inspect the app logs during the first launch as Transformers downloads the configured encoders.
 
-## Local run
+## Run locally
 
 ```bash
 python -m venv .venv
@@ -33,10 +33,11 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Evaluation and privacy notes
+## What the app represents
 
-- The uploaded WAV is processed in memory; the app does not save it.
-- Predictions represent the model's output for acted emotion labels, not a person's verified emotional state.
-- Actor-independent results must be reported separately from any speaker-dependent random-split comparison.
-- If the notebook selected speaker normalization, this deployment head is trained again with that option disabled so one-clip inference matches its training preprocessing.
+- Audio predictions use the exported encoder/seed head ensemble and the notebook's single-clip preprocessing.
+- The results tab displays saved notebook metrics, per-class results, ablation output, and the unseen-actor confusion matrix when those exports are present.
+- Training, cross-validation, and ablation are run in the notebook; the Streamlit app presents saved outputs and performs inference only.
+- The optimized notebook does not implement the earlier notebook's robustness suite, SHAP, or Grad-CAM analyses. This deployment does not claim those analyses.
+- Report actor-independent test/CV results separately from the speaker-dependent random-split reference. RAVDESS contains acted emotions; predictions are model outputs, not verified emotional states.
 
