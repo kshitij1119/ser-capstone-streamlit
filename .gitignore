@@ -3,8 +3,4 @@ __pycache__/
 .venv/
 venv/
 .env
-model_bundle/*.pt
-model_bundle/*.pth
-model_bundle/*.ckpt
-model_bundle/*.safetensors
 
