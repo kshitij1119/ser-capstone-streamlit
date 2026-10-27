@@ -7,5 +7,4 @@ model_bundle/*.pt
 model_bundle/*.pth
 model_bundle/*.ckpt
 model_bundle/*.safetensors
-!model_bundle/README.md
 
