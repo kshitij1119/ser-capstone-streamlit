@@ -1,8 +1,11 @@
 # Trained model bundle
 
-Run the **Export Streamlit model bundle** cell at the end of the SER notebook, then copy `bundle.pt` and `metadata.json` into this directory.
+Run the final **Export Streamlit model bundle** cell in `SER_capstone_optimized_explained.ipynb`. Copy these generated files into this directory:
 
-The bundle contains the trained classifier head and training-only normalization statistics. It should remain small enough for a normal private GitHub repository. The pretrained speech encoder is downloaded from Hugging Face using the `encoder_id` recorded in `metadata.json`.
+- `bundle.pt` — classifier heads and training-only feature normalization statistics.
+- `metadata.json` — labels, encoder IDs, and preprocessing settings.
+- `results.json` — saved evaluation metrics and per-class results.
+- `confusion_matrix.png` — unseen-actor confusion matrix.
 
-Commit `bundle.pt` and `metadata.json` here after export so the deployed app can load them. Do not commit dataset files, audio recordings, or credentials.
+The pretrained encoders are loaded from Hugging Face using the IDs in the metadata. The Git ignore rules allow these export files to be committed; do not commit dataset audio or credentials.
 
