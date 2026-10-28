@@ -1,0 +1,27 @@
+{
+  "format_version": 2,
+  "labels": [
+    "neutral",
+    "calm",
+    "happy",
+    "sad",
+    "angry",
+    "fearful",
+    "disgust",
+    "surprised"
+  ],
+  "sample_rate": 16000,
+  "max_seconds": 5.0,
+  "n_layers": 25,
+  "feature_dim": 2048,
+  "head_hidden": 256,
+  "encoder_ids": [
+    "microsoft/wavlm-large",
+    "facebook/hubert-large-ll60k"
+  ],
+  "member_count": 6,
+  "seed_count": 3,
+  "pooling": "temporal mean and standard deviation per hidden layer",
+  "speaker_normalization": false,
+  "input_standardization": "per-clip z-score after trim/crop/peak-normalization"
+}

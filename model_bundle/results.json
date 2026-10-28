@@ -1,0 +1,83 @@
+{
+  "speaker_independent_test_accuracy (4 unseen actors)": 0.8041666666666667,
+  "speaker_independent_test_macro_f1": 0.8036478429142191,
+  "deployment_head_test_accuracy": 0.8041666666666667,
+  "deployment_head_test_macro_f1": 0.8036478429142191,
+  "encoders": [
+    "wavlm-large",
+    "hubert-large"
+  ],
+  "ensemble_members": 6,
+  "extra_corpora_used": true,
+  "training_corpora": [
+    "RAVDESS speech",
+    "CREMA-D",
+    "TESS"
+  ],
+  "speaker_normalisation": false,
+  "deployment_speaker_normalisation": false,
+  "per_class": {
+    "neutral": {
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1-score": 0.8571428571428571,
+      "support": 16.0
+    },
+    "calm": {
+      "precision": 0.6739130434782609,
+      "recall": 0.96875,
+      "f1-score": 0.7948717948717948,
+      "support": 32.0
+    },
+    "happy": {
+      "precision": 0.7931034482758621,
+      "recall": 0.71875,
+      "f1-score": 0.7540983606557377,
+      "support": 32.0
+    },
+    "sad": {
+      "precision": 0.6363636363636364,
+      "recall": 0.65625,
+      "f1-score": 0.6461538461538462,
+      "support": 32.0
+    },
+    "angry": {
+      "precision": 0.9333333333333333,
+      "recall": 0.875,
+      "f1-score": 0.9032258064516129,
+      "support": 32.0
+    },
+    "fearful": {
+      "precision": 0.85,
+      "recall": 0.53125,
+      "f1-score": 0.6538461538461539,
+      "support": 32.0
+    },
+    "disgust": {
+      "precision": 0.8648648648648649,
+      "recall": 1.0,
+      "f1-score": 0.927536231884058,
+      "support": 32.0
+    },
+    "surprised": {
+      "precision": 0.8787878787878788,
+      "recall": 0.90625,
+      "f1-score": 0.8923076923076924,
+      "support": 32.0
+    },
+    "accuracy": 0.8041666666666667,
+    "macro avg": {
+      "precision": 0.8287957756379796,
+      "recall": 0.80078125,
+      "f1-score": 0.8036478429142191,
+      "support": 240.0
+    },
+    "weighted avg": {
+      "precision": 0.8173821606805115,
+      "recall": 0.8041666666666667,
+      "f1-score": 0.8000815086323099,
+      "support": 240.0
+    }
+  },
+  "ablation": []
+}
